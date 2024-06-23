@@ -39,6 +39,11 @@ public class UsersService : IUsersService
         await _repository.PutUser(id, user);
     }
 
+    public Task SeedUsers()
+    {
+        return _repository.SeedUsers();
+    }
+
     public bool UserExists(int id)
     {
        return _repository.UserExists(id);

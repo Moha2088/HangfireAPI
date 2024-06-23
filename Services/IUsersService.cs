@@ -5,6 +5,7 @@ namespace HangfireAPI.Services;
 public interface IUsersService
 {
     Task DeleteUser(int id);
+    Task SeedUsers();
     Task<IEnumerable<User>> GetThenDeleteUser();
     Task<User> GetUser(int id);
     Task<User> PostUser(User user);

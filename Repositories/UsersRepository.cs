@@ -1,7 +1,7 @@
 ﻿using Hangfire;
 using HangfireAPI.Data;
 using HangfireAPI.Models;
-using Microsoft.AspNetCore.Http.HttpResults;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace HangfireAPI.Repositories;
@@ -22,6 +22,51 @@ public class UsersRepository : IUsersRepository
         await _context.User.ExecuteDeleteAsync();
     }
 
+    public void SeedData()
+    {
+        _context.User.AddRange(
+
+            new User
+            {
+                Name = "TestUser1",
+                Password = "TestPassword"
+            },
+
+             new User
+             {
+                 Name = "TestUser2",
+                 Password = "TestPassword"
+             },
+
+              new User
+              {
+                  Name = "TestUser3",
+                  Password = "TestPassword"
+              },
+
+               new User
+               {
+                   Name = "TestUser4",
+                   Password = "TestPassword"
+               },
+
+                new User
+                {
+                    Name = "TestUser5",
+                    Password = "TestPassword"
+                }
+            );
+
+        _context.SaveChanges();
+    }
+
+    public async Task SeedUsers()
+    {
+        BackgroundJob.Enqueue(() => Console.WriteLine("Initiating seeding of the database!"));
+        var seedJobId = BackgroundJob.Schedule(() => SeedData(), TimeSpan.FromSeconds(5));
+        BackgroundJob.ContinueJobWith(seedJobId, () => _logger.LogInformation("Data has been seeded"));
+    }
+
     public async Task DeleteUser(int id)
     {
         var user = await _context.User.FindAsync(id);
@@ -36,14 +81,15 @@ public class UsersRepository : IUsersRepository
 
     public async Task<IEnumerable<User>> GetThenDeleteUser()
     {
-            BackgroundJob.Enqueue(() =>
-            Console.WriteLine("Thanks for getting the userlist! Unfortunately the list wil get deleted in 10 seconds :("));
+        Console.WriteLine("letsgoo");
+        BackgroundJob.Enqueue(() =>
+        Console.WriteLine("Thanks for getting the userlist! Unfortunately the list wil get deleted in 10 seconds :("));
 
-            var deleteJob = BackgroundJob.Schedule(() => DeleteAll(),
-            TimeSpan.FromSeconds(10));
+        var deleteJobId = BackgroundJob.Schedule(() => DeleteAll(),
+        TimeSpan.FromSeconds(10));
 
-            BackgroundJob.ContinueJobWith(deleteJob, () => Console.WriteLine("List has been deleted!"));
-            return await _context.User.ToListAsync();
+        BackgroundJob.ContinueJobWith(deleteJobId, () => Console.WriteLine("List has been deleted!"));
+        return await _context.User.ToListAsync();
     }
 
     public async Task<User> GetUser(int id)

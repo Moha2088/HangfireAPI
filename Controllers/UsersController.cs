@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using HangfireAPI.Data;
 using HangfireAPI.Models;
 using Hangfire;
+using HangfireAPI.Services;
 
 namespace HangfireAPI.Controllers
 {
@@ -15,49 +16,44 @@ namespace HangfireAPI.Controllers
     [ApiController]
     public class UsersController : ControllerBase
     {
-        private readonly HangfireAPIContext _context;
+        private readonly IUsersService _service;
 
-        public UsersController(HangfireAPIContext context)
+        public UsersController(IUsersService service)
         {
-            _context = context;
+            _service = service;
         }
 
-        [HttpDelete]
-        public async Task DeleteAll()
+        [HttpGet("/seed")]
+        public Task SeedUsers()
         {
-            await _context.User.ExecuteDeleteAsync();
+            return _service.SeedUsers();
         }
 
         // GET: api/Users
         [HttpGet]
         public async Task<ActionResult<IEnumerable<User>>> GetThenDeleteUser()
         {
-            if (_context.User.Any())
+            var users = await _service.GetThenDeleteUser();
+
+            if (!users.Any())
             {
-                BackgroundJob.Enqueue(() =>
-                Console.WriteLine("Thanks for getting the userlist! Unfortunately the list wil get deleted in 10 seconds :("));
-
-                BackgroundJob.Schedule(() => DeleteAll(),
-                TimeSpan.FromSeconds(10));
-
-                return Ok(await _context.User.ToListAsync());
+                return NotFound("No users found");
             }
 
-            return NotFound("No users found");
+            return Ok(users);
         }
 
         // GET: api/Users/5
         [HttpGet("{id}")]
         public async Task<ActionResult<User>> GetUser(int id)
         {
-            var user = await _context.User.FindAsync(id);
-
+            var user = await _service.GetUser(id);
             if (user == null)
             {
-                return NotFound();
+                return NotFound("No user found");
             }
 
-            return user;
+            return Ok(user);
         }
 
         // PUT: api/Users/5
@@ -65,29 +61,7 @@ namespace HangfireAPI.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> PutUser(int id, User user)
         {
-            if (id != user.Id)
-            {
-                return BadRequest();
-            }
-
-            _context.Entry(user).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!UserExists(id))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
+            await _service.PutUser(id, user);
             return NoContent();
         }
 
@@ -96,9 +70,7 @@ namespace HangfireAPI.Controllers
         [HttpPost]
         public async Task<ActionResult<User>> PostUser(User user)
         {
-            _context.User.Add(user);
-            await _context.SaveChangesAsync();
-
+            var createdUser = await _service.PostUser(user);
             return CreatedAtAction("GetUser", new { id = user.Id }, user);
         }
 
@@ -106,21 +78,13 @@ namespace HangfireAPI.Controllers
         [HttpDelete("{id}")]
         public async Task<IActionResult> DeleteUser(int id)
         {
-            var user = await _context.User.FindAsync(id);
-            if (user == null)
-            {
-                return NotFound();
-            }
-
-            _context.User.Remove(user);
-            await _context.SaveChangesAsync();
-
+            await _service.DeleteUser(id);
             return NoContent();
         }
 
         private bool UserExists(int id)
         {
-            return _context.User.Any(e => e.Id == id);
+            return _service.UserExists(id);
         }
     }
 }
