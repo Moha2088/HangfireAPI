@@ -64,7 +64,7 @@ public class UsersRepository : IUsersRepository
     {
         BackgroundJob.Enqueue(() => Console.WriteLine("Initiating seeding of the database!"));
         var seedJobId = BackgroundJob.Schedule(() => SeedData(), TimeSpan.FromSeconds(5));
-        BackgroundJob.ContinueJobWith(seedJobId, () => _logger.LogInformation("Data has been seeded"));
+        BackgroundJob.ContinueJobWith(seedJobId, () => Console.WriteLine("Data has been seeded"));
     }
 
     public async Task DeleteUser(int id)
