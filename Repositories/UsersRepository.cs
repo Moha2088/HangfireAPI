@@ -10,11 +10,13 @@ public class UsersRepository : IUsersRepository
 {
     private readonly HangfireAPIContext _context;
     private readonly ILogger<UsersRepository> _logger;
+    private readonly IBackgroundJobClient _backgroundJobClient;
 
-    public UsersRepository(HangfireAPIContext context, ILogger<UsersRepository> logger)
+    public UsersRepository(HangfireAPIContext context, ILogger<UsersRepository> logger, IBackgroundJobClient backgroundJobClient)
     {
         _context = context;
         _logger = logger;
+        _backgroundJobClient = backgroundJobClient;
     }
 
     public async Task DeleteAll()
@@ -62,9 +64,9 @@ public class UsersRepository : IUsersRepository
 
     public async Task SeedUsers()
     {
-        BackgroundJob.Enqueue(() => Console.WriteLine("Initiating seeding of the database!"));
-        var seedJobId = BackgroundJob.Schedule(() => SeedData(), TimeSpan.FromSeconds(5));
-        BackgroundJob.ContinueJobWith(seedJobId, () => Console.WriteLine("Data has been seeded"));
+        _backgroundJobClient.Enqueue(() => Console.WriteLine("Initiating seeding of the database!"));
+        var seedJobId = _backgroundJobClient.Schedule(() => SeedData(), TimeSpan.FromSeconds(5));
+        _backgroundJobClient.ContinueJobWith(seedJobId, () => Console.WriteLine("Data has been seeded"));
     }
 
     public async Task DeleteUser(int id)
@@ -81,14 +83,13 @@ public class UsersRepository : IUsersRepository
 
     public async Task<IEnumerable<User>> GetThenDeleteUser()
     {
-        Console.WriteLine("letsgoo");
-        BackgroundJob.Enqueue(() =>
+        _backgroundJobClient.Enqueue(() =>
         Console.WriteLine("Thanks for getting the userlist! Unfortunately the list wil get deleted in 10 seconds :("));
 
-        var deleteJobId = BackgroundJob.Schedule(() => DeleteAll(),
+        var deleteJobId = _backgroundJobClient.Schedule(() => DeleteAll(),
         TimeSpan.FromSeconds(10));
 
-        BackgroundJob.ContinueJobWith(deleteJobId, () => Console.WriteLine("List has been deleted!"));
+        _backgroundJobClient.ContinueJobWith(deleteJobId, () => Console.WriteLine("List has been deleted!"));
         return await _context.User.ToListAsync();
     }
 

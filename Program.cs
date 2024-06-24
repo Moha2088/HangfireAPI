@@ -5,6 +5,8 @@ using Hangfire;
 using System.Configuration;
 using HangfireAPI.Repositories;
 using HangfireAPI.Services;
+using HangfireBasicAuthenticationFilter;
+using HangfireAPI.Authorization;
 
 namespace HangfireAPI;
 
@@ -50,10 +52,18 @@ public class Program
 
         app.UseHttpsRedirection();
 
-        app.UseAuthorization();
+        app.UseHangfireDashboard(options: new DashboardOptions
+        {
+            Authorization = new[]
+            {
+                new AuthorizationFilter()
+            },
 
-        app.UseHangfireDashboard();
-        app.MapHangfireDashboard("/hangfire");
+            DarkModeEnabled = false,
+            DashboardTitle = "HangfireAPI Dashboard"
+        });
+
+        app.UseAuthorization();
 
         var timeService = app.Services.GetRequiredService<Timeservice>();
         BackgroundJob.Enqueue(() => Console.WriteLine("Hello from Hangfire!"));
