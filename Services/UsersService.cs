@@ -6,17 +6,19 @@ namespace HangfireAPI.Services;
 public class UsersService : IUsersService
 {
     private readonly IUsersRepository _repository;
+    private readonly ILogger<UsersService> _logger;
 
-    public UsersService(IUsersRepository repository)
+    public UsersService(IUsersRepository repository, ILogger<UsersService> logger)
     {
         _repository = repository;
+        _logger = logger;
     }
 
 
 
     public async Task DeleteUser(int id)
     {
-       await _repository.DeleteUser(id);
+        await _repository.DeleteUser(id);
     }
 
     public async Task<IEnumerable<User>> GetThenDeleteUser()
@@ -27,6 +29,16 @@ public class UsersService : IUsersService
     public Task<User> GetUser(int id)
     {
         return _repository.GetUser(id);
+    }
+
+    public Task<IEnumerable<User>> GetUsersSP(CancellationToken cancellationToken)
+    {
+        return _repository.GetUsersSP(cancellationToken);
+    }
+
+    public Task<User> GetUserSP(int id, CancellationToken cancellationToken)
+    {
+        return _repository.GetUserSP(id, cancellationToken);
     }
 
     public Task<User> PostUser(User user)
@@ -46,6 +58,6 @@ public class UsersService : IUsersService
 
     public bool UserExists(int id)
     {
-       return _repository.UserExists(id);
+        return _repository.UserExists(id);
     }
 }

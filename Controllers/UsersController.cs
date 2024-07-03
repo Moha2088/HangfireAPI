@@ -17,10 +17,12 @@ namespace HangfireAPI.Controllers
     public class UsersController : ControllerBase
     {
         private readonly IUsersService _service;
+        private readonly ILogger<UsersController> _logger;
 
-        public UsersController(IUsersService service)
+        public UsersController(IUsersService service, ILogger<UsersController> logger)
         {
             _service = service;
+            _logger = logger;
         }
 
         [HttpGet("/seed")]
@@ -54,6 +56,20 @@ namespace HangfireAPI.Controllers
             }
 
             return Ok(user);
+        }
+
+        [HttpGet("/spUsers")]
+        public async Task<ActionResult<IEnumerable<User>>> GetUsersSP(CancellationToken cancellationToken)
+        {
+            var users = await _service.GetUsersSP(cancellationToken);
+            return users.Any() ? Ok(users) : NotFound("No users found");
+        }
+
+        [HttpGet("/spUser")]
+        public async Task<ActionResult<User>> GetUserSP(int id, CancellationToken cancellationToken)
+        {
+            var user = await _service.GetUserSP(id, cancellationToken);
+            return user != null ? Ok(user) : NotFound("No user found");
         }
 
         // PUT: api/Users/5

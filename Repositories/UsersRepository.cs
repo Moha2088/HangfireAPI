@@ -93,6 +93,46 @@ public class UsersRepository : IUsersRepository
         return await _context.User.ToListAsync();
     }
 
+    public async Task<IEnumerable<User>> GetUsersSP(CancellationToken cancellationToken)
+    {
+        string storedProcedure = "spGetUsers";
+
+        try
+        {
+            var users = await _context.User
+            .FromSqlInterpolated($"{storedProcedure}")
+            .ToListAsync(cancellationToken);
+
+            return users;
+        }
+
+        catch (OperationCanceledException ex)
+        {
+            _logger.LogError($"The request has been cancelled : {ex.Message}");
+            return Enumerable.Empty<User>();
+        }
+    }
+
+    public async Task<User> GetUserSP(int id, CancellationToken cancellationToken)
+    {
+        string storedProcedure = "spGetUser";
+
+        try
+        {
+            var getUserQuery = await _context.User
+            .FromSqlInterpolated($"{storedProcedure} {id}")
+            .ToListAsync(cancellationToken);
+
+            return getUserQuery.Single();
+        }
+
+        catch (OperationCanceledException ex)
+        {
+            _logger.LogInformation($"The request has been cancelled: {ex.Message}");
+            return (User)Enumerable.Empty<User>();
+        }
+    }
+
     public async Task<User> GetUser(int id)
     {
         var user = await _context.User.FindAsync(id);
