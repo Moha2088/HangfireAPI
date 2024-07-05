@@ -14,6 +14,7 @@ namespace HangfireAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
+    [ResponseCache(Duration = 60)]
     public class UsersController : ControllerBase
     {
         private readonly IUsersService _service;
@@ -26,9 +27,10 @@ namespace HangfireAPI.Controllers
         }
 
         [HttpGet("/seed")]
-        public Task SeedUsers()
+        public async Task<ActionResult> SeedUsers()
         {
-            return _service.SeedUsers();
+            await _service.SeedUsers();
+            return Ok("Users has been seeded");
         }
 
         // GET: api/Users
@@ -65,7 +67,7 @@ namespace HangfireAPI.Controllers
             return users.Any() ? Ok(users) : NotFound("No users found");
         }
 
-        [HttpGet("/spUser")]
+        [HttpGet("/spUser/{id}")]
         public async Task<ActionResult<User>> GetUserSP(int id, CancellationToken cancellationToken)
         {
             var user = await _service.GetUserSP(id, cancellationToken);

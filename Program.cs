@@ -22,6 +22,7 @@ public class Program
 
         // Add services to the container.
 
+        builder.Services.AddResponseCaching();
         builder.Services.AddScoped<IUsersRepository, UsersRepository>();
         builder.Services.AddScoped<IUsersService, UsersService>();
         builder.Services.AddTransient<Timeservice>();
@@ -50,6 +51,7 @@ public class Program
             app.UseSwaggerUI();
         }
 
+        app.UseResponseCaching();
         app.UseHttpsRedirection();
 
         app.UseHangfireDashboard(options: new DashboardOptions
