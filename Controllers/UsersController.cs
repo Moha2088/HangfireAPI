@@ -9,12 +9,13 @@ using HangfireAPI.Data;
 using HangfireAPI.Models;
 using Hangfire;
 using HangfireAPI.Services;
+using Microsoft.Data.SqlClient;
 
 namespace HangfireAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [ResponseCache(Duration = 60)]
+
     public class UsersController : ControllerBase
     {
         private readonly IUsersService _service;
@@ -33,18 +34,37 @@ namespace HangfireAPI.Controllers
             return Ok("Users has been seeded");
         }
 
-        // GET: api/Users
-        [HttpGet]
-        public async Task<ActionResult<IEnumerable<User>>> GetThenDeleteUser()
+        private bool IsOutOfBounds(int pageNumber, UserResponse response)
         {
-            var users = await _service.GetThenDeleteUser();
+            return pageNumber > response.Pages;
+        }
 
-            if (!users.Any())
+        // GET: api/Users
+        [HttpGet("page/{pageNumber}")]
+        public async Task<ActionResult<UserResponse>> GetUsers(int pageNumber)
+        {
+            if (pageNumber == 0)
             {
-                return NotFound("No users found");
+                return BadRequest("0 is not a valid number. Try again!");
             }
 
-            return Ok(users);
+            else
+            {
+                var response = await _service.GetUsers(pageNumber);
+                var totalPages = response.Pages;
+
+                if (!response.Users.Any())
+                {
+                    return NotFound("No users found");
+                }
+
+                if (IsOutOfBounds(pageNumber, response))
+                {
+                    return NotFound($"Please enter a number from 1-{totalPages}");
+                }
+
+                return Ok(response);
+            }
         }
 
         // GET: api/Users/5
@@ -60,7 +80,8 @@ namespace HangfireAPI.Controllers
             return Ok(user);
         }
 
-        [HttpGet("/spUsers")]
+        [HttpGet("/spUsers/{pageNumber}")]
+        [ResponseCache(Duration = 60)]
         public async Task<ActionResult<IEnumerable<User>>> GetUsersSP(CancellationToken cancellationToken)
         {
             var users = await _service.GetUsersSP(cancellationToken);

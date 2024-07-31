@@ -19,47 +19,20 @@ public class UsersRepository : IUsersRepository
         _backgroundJobClient = backgroundJobClient;
     }
 
-    public async Task DeleteAll()
-    {
-        await _context.User.ExecuteDeleteAsync();
-    }
-
     public void SeedData()
     {
-        _context.User.AddRange(
-
-            new User
-            {
-                Name = "TestUser1",
-                Password = "TestPassword"
-            },
-
-             new User
-             {
-                 Name = "TestUser2",
-                 Password = "TestPassword"
-             },
-
-              new User
-              {
-                  Name = "TestUser3",
-                  Password = "TestPassword"
-              },
-
-               new User
-               {
-                   Name = "TestUser4",
-                   Password = "TestPassword"
-               },
-
+        for (int i = 1; i < 50; i++)
+        {
+            _context.User.AddRange(
                 new User
                 {
-                    Name = "TestUser5",
-                    Password = "TestPassword"
+                    Name = $"TestUser{i}",
+                    Password = $"TestPassword{i}{i}"
                 }
             );
 
-        _context.SaveChanges();
+            _context.SaveChanges();
+        }
     }
 
     public async Task SeedUsers()
@@ -81,16 +54,31 @@ public class UsersRepository : IUsersRepository
         await _context.SaveChangesAsync();
     }
 
-    public async Task<IEnumerable<User>> GetThenDeleteUser()
+    public async Task<UserResponse> GetUsers(int pageNumber)
     {
-        _backgroundJobClient.Enqueue(() =>
-        Console.WriteLine("Thanks for getting the userlist! Unfortunately the list wil get deleted in 10 seconds :("));
+        int pageItemCount = 10;
+        int totalItemCount = _context.User.Count() / pageItemCount;
 
-        var deleteJobId = _backgroundJobClient.Schedule(() => DeleteAll(),
-        TimeSpan.FromSeconds(10));
+        var usersToDisplay = await _context.User    
+            .Skip((pageNumber - 1) * pageItemCount)
+            .Take(pageItemCount)
+            .ToListAsync();
 
-        _backgroundJobClient.ContinueJobWith(deleteJobId, () => Console.WriteLine("List has been deleted!"));
-        return await _context.User.ToListAsync();
+        int nextPageCount = pageNumber;
+        int prevPageCount = pageNumber;
+        int? nextPage = pageNumber < totalItemCount ? nextPageCount += 1 : null;
+        int? prevPage = pageNumber - 1 != 0 ? prevPageCount -= 1 : null;
+
+
+        return new UserResponse
+        {
+            Users = usersToDisplay,
+            TotalUsers = _context.User.Count(),
+            CurrentPage = pageNumber,
+            Pages = totalItemCount,
+            NextPage = nextPage,
+            PrevPage = prevPage
+        };
     }
 
     public async Task<IEnumerable<User>> GetUsersSP(CancellationToken cancellationToken)

@@ -21,9 +21,9 @@ public class UsersService : IUsersService
         await _repository.DeleteUser(id);
     }
 
-    public async Task<IEnumerable<User>> GetThenDeleteUser()
+    public async Task<UserResponse> GetUsers(int pageNumber)
     {
-        return await _repository.GetThenDeleteUser();
+        return await _repository.GetUsers(pageNumber);
     }
 
     public Task<User> GetUser(int id)
